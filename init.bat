@@ -1,37 +1,71 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
-REM Nombre del instalador de Node.js (.msi)
-set INSTALLER=node-v20.11.1-x64.msi
+REM Nombre exacto del instalador (cámbialo si es diferente)
+set "INSTALLER=node-v20.11.1-x64.msi"
 
-REM Verifica si Node ya está instalado
+echo ======================================
+echo Verificando existencia del instalador...
+echo ======================================
+if not exist "%~dp0%INSTALLER%" (
+    echo ERROR: Instalador %INSTALLER% no encontrado en la carpeta actual.
+    pause
+    exit /b
+)
+
+REM Verificar si node ya está instalado
+echo ======================================
+echo Verificando si Node.js ya está instalado...
+echo ======================================
 where node >nul 2>&1
-if %ERRORLEVEL%==0 (
-    echo Node.js ya está instalado. Saltando instalación...
+if !errorlevel! == 0 (
+    echo Node.js ya está instalado. Saltando instalación.
 ) else (
     echo Instalando Node.js...
     msiexec /i "%~dp0%INSTALLER%" /quiet /norestart
-
-    echo Esperando a que la instalación termine...
-    timeout /t 10 /nobreak >nul
+    echo Esperando 15 segundos para completar instalación...
+    timeout /t 15 /nobreak >nul
 )
 
-REM Agrega temporalmente Node.js a PATH (por si no está disponible aún)
+REM Refrescar PATH en caso de instalación nueva
 set "NODE_PATH=%ProgramFiles%\nodejs"
 set "PATH=%NODE_PATH%;%PATH%"
 
-REM Verifica instalación
-echo Verificando versión de Node y NPM...
+echo ======================================
+echo Verificando Node.js y npm
+echo ======================================
 node -v
+if !errorlevel! neq 0 (
+    echo ERROR: Node.js no se instaló correctamente o no está en PATH.
+    pause
+    exit /b
+)
 npm -v
 
-REM Ejecuta los comandos requeridos
-echo Ejecutando 'npx playwright install'...
+REM Comando 1: Instalar Playwright
+echo ======================================
+echo Ejecutando: npx playwright install
+echo ======================================
 npx playwright install
+if !errorlevel! neq 0 (
+    echo ERROR al ejecutar 'npx playwright install'
+    pause
+    exit /b
+)
 
-echo Ejecutando 'npm install'...
+REM Comando 2: Instalar dependencias npm
+echo ======================================
+echo Ejecutando: npm install
+echo ======================================
 npm install
+if !errorlevel! neq 0 (
+    echo ERROR al ejecutar 'npm install'
+    pause
+    exit /b
+)
 
-echo Todo listo.
+echo ======================================
+echo Instalación completada correctamente.
+echo ======================================
 pause
 endlocal
