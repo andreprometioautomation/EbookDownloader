@@ -1,74 +1,60 @@
 @echo off
-cls
-title Instalador Node.js + Playwright - DEBUG
-setlocal enabledelayedexpansion
+setlocal
 
+REM Nombre del instalador
 set "INSTALLER=node-v20.11.1-x64.msi"
 
-echo ================================
-echo 🛠 INICIANDO INSTALADOR DEBUG
-echo ================================
-echo.
+echo =============================
+echo Verificando instalador...
+echo =============================
 
-REM 1. Verificar que el instalador existe
 if not exist "%~dp0%INSTALLER%" (
-    echo ❌ ERROR: No se encontró "%INSTALLER%" en la carpeta actual.
-    echo Asegúrate de tener el instalador en esta carpeta.
-    goto end
+    echo ERROR: El instalador %INSTALLER% no existe en esta carpeta.
+    pause
+    exit /b
 )
 
-REM 2. Verificar si node está instalado
+REM Verificar si Node.js ya está instalado
 where node >nul 2>&1
 if %ERRORLEVEL%==0 (
-    echo ✅ Node.js ya está instalado.
+    echo Node.js ya está instalado. Saltando instalación...
 ) else (
-    echo 🚀 Instalando Node.js desde %INSTALLER%...
+    echo =============================
+    echo Ejecutando instalador de Node.js
+    echo =============================
+
+    REM Instala Node.js con interfaz gráfica visible
     start /wait msiexec /i "%~dp0%INSTALLER%"
-    echo ✅ Instalación completada (o cerrada manualmente).
-    timeout /t 10 >nul
+
+    echo Presiona una tecla cuando la instalación haya terminado...
+    pause
 )
 
-REM 3. Mostrar versiones para verificar instalación
-echo.
-echo 📦 Verificando node y npm...
+REM Refrescar PATH por si fue recién instalado
+set "NODE_PATH=%ProgramFiles%\nodejs"
+set "PATH=%NODE_PATH%;%PATH%"
+
+echo =============================
+echo Verificando node y npm
+echo =============================
 where node
-node -v
 where npm
+
+node -v
 npm -v
 
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Node.js o npm no están funcionando.
-    goto end
-)
+echo =============================
+echo Ejecutando npx playwright install
+echo =============================
+npx playwright install
 
-REM 4. Ejecutar npx playwright install
-echo.
-echo ▶️ Ejecutando: npx playwright install
-call npx playwright install
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Falló npx playwright install
-    goto end
-)
+echo =============================
+echo Ejecutando npm install
+echo =============================
+npm install
 
-REM 5. Ejecutar npm install
-echo.
-echo ▶️ Ejecutando: npm install
-if not exist package.json (
-    echo ❌ No se encontró package.json. Asegúrate de tener uno.
-    goto end
-)
-
-call npm install
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Falló npm install
-    goto end
-)
-
-echo.
-echo ✅ ¡Todo se ha instalado correctamente!
-
-:end
-echo.
-echo 🧯 Proceso finalizado. Revisa arriba si hubo errores.
+echo =============================
+echo Proceso terminado con éxito.
+echo =============================
 pause
 endlocal
