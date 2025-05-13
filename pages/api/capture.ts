@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const PROFILE_PATH = path.join(process.cwd(), 'firefox-profile');
-const SCREENSHOT_DIR = path.join(process.cwd(), 'screenshots');
+const SCREENSHOT_BASE_DIR = path.join(process.cwd(), 'screenshots');
 const MAX_PAGES = 100;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,9 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'ASIN is required' });
   }
 
-  if (!fs.existsSync(SCREENSHOT_DIR)) {
-    fs.mkdirSync(SCREENSHOT_DIR);
+  // Crear carpeta base si no existe
+  if (!fs.existsSync(SCREENSHOT_BASE_DIR)) {
+    fs.mkdirSync(SCREENSHOT_BASE_DIR);
   }
+
+  // Crear una subcarpeta única para este proceso
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const uniqueDir = path.join(SCREENSHOT_BASE_DIR, `${asin}-${timestamp}`);
+  fs.mkdirSync(uniqueDir);
 
   let context: BrowserContext | undefined;
 
@@ -40,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let noChangeCount = 0;
 
     while (pageNum <= MAX_PAGES && noChangeCount < 2) {
-      const filename = path.join(SCREENSHOT_DIR, `page_${String(pageNum).padStart(2, '0')}.png`);
+      const filename = path.join(uniqueDir, `page_${String(pageNum).padStart(2, '0')}.png`);
       await page.screenshot({ path: filename, fullPage: true });
       console.log(`Página ${pageNum} capturada.`);
 
