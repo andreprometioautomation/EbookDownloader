@@ -1,71 +1,60 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
-REM Nombre exacto del instalador (cámbialo si es diferente)
+REM Nombre del instalador
 set "INSTALLER=node-v20.11.1-x64.msi"
 
-echo ======================================
-echo Verificando existencia del instalador...
-echo ======================================
+echo =============================
+echo Verificando instalador...
+echo =============================
+
 if not exist "%~dp0%INSTALLER%" (
-    echo ERROR: Instalador %INSTALLER% no encontrado en la carpeta actual.
+    echo ERROR: El instalador %INSTALLER% no existe en esta carpeta.
     pause
     exit /b
 )
 
-REM Verificar si node ya está instalado
-echo ======================================
-echo Verificando si Node.js ya está instalado...
-echo ======================================
+REM Verificar si Node.js ya está instalado
 where node >nul 2>&1
-if !errorlevel! == 0 (
-    echo Node.js ya está instalado. Saltando instalación.
+if %ERRORLEVEL%==0 (
+    echo Node.js ya está instalado. Saltando instalación...
 ) else (
-    echo Instalando Node.js...
-    msiexec /i "%~dp0%INSTALLER%" /quiet /norestart
-    echo Esperando 15 segundos para completar instalación...
-    timeout /t 15 /nobreak >nul
+    echo =============================
+    echo Ejecutando instalador de Node.js
+    echo =============================
+
+    REM Instala Node.js con interfaz gráfica visible
+    start /wait msiexec /i "%~dp0%INSTALLER%"
+
+    echo Presiona una tecla cuando la instalación haya terminado...
+    pause
 )
 
-REM Refrescar PATH en caso de instalación nueva
+REM Refrescar PATH por si fue recién instalado
 set "NODE_PATH=%ProgramFiles%\nodejs"
 set "PATH=%NODE_PATH%;%PATH%"
 
-echo ======================================
-echo Verificando Node.js y npm
-echo ======================================
+echo =============================
+echo Verificando node y npm
+echo =============================
+where node
+where npm
+
 node -v
-if !errorlevel! neq 0 (
-    echo ERROR: Node.js no se instaló correctamente o no está en PATH.
-    pause
-    exit /b
-)
 npm -v
 
-REM Comando 1: Instalar Playwright
-echo ======================================
-echo Ejecutando: npx playwright install
-echo ======================================
+echo =============================
+echo Ejecutando npx playwright install
+echo =============================
 npx playwright install
-if !errorlevel! neq 0 (
-    echo ERROR al ejecutar 'npx playwright install'
-    pause
-    exit /b
-)
 
-REM Comando 2: Instalar dependencias npm
-echo ======================================
-echo Ejecutando: npm install
-echo ======================================
+echo =============================
+echo Ejecutando npm install
+echo =============================
 npm install
-if !errorlevel! neq 0 (
-    echo ERROR al ejecutar 'npm install'
-    pause
-    exit /b
-)
 
-echo ======================================
-echo Instalación completada correctamente.
-echo ======================================
+echo =============================
+echo Proceso terminado con éxito.
+echo =============================
 pause
 endlocal
