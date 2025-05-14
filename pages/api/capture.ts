@@ -1,10 +1,12 @@
+// pages/api/screenshots.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { firefox, BrowserContext } from 'playwright';
 import fs from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid'; // npm install uuid
 
 const PROFILE_PATH = path.join(process.cwd(), 'firefox-profile');
-const SCREENSHOT_BASE_DIR = path.join(process.cwd(), 'screenshots');
+const SCREENSHOT_ROOT = path.join(process.cwd(), 'screenshots');
 const MAX_PAGES = 100;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,15 +19,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'ASIN is required' });
   }
 
-  // Crear carpeta base si no existe
-  if (!fs.existsSync(SCREENSHOT_BASE_DIR)) {
-    fs.mkdirSync(SCREENSHOT_BASE_DIR);
+  // Crear directorio raíz si no existe
+  if (!fs.existsSync(SCREENSHOT_ROOT)) {
+    fs.mkdirSync(SCREENSHOT_ROOT);
   }
 
-  // Crear una subcarpeta única para este proceso
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const uniqueDir = path.join(SCREENSHOT_BASE_DIR, `${asin}-${timestamp}`);
-  fs.mkdirSync(uniqueDir);
+  // Crear carpeta única para esta sesión
+  const requestId = uuidv4();
+  const sessionDir = path.join(SCREENSHOT_ROOT, requestId);
+  fs.mkdirSync(sessionDir);
 
   let context: BrowserContext | undefined;
 
@@ -37,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const [page] = context.pages().length ? context.pages() : [await context.newPage()];
 
     await page.goto('https://leer.amazon.com.mx/kindle-library', { waitUntil: 'networkidle' });
-    res.status(200).json({ message: 'Started capturing the pages' });
+    res.status(200).json({ message: 'Started capturing the pages', requestId }); // Devuelve requestId
 
     await page.goto(`https://leer.amazon.com.mx/?asin=${asin}`, { waitUntil: 'networkidle' });
 
@@ -46,9 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let noChangeCount = 0;
 
     while (pageNum <= MAX_PAGES && noChangeCount < 2) {
-      const filename = path.join(uniqueDir, `page_${String(pageNum).padStart(2, '0')}.png`);
+      const filename = path.join(sessionDir, `page_${String(pageNum).padStart(2, '0')}.png`);
       await page.screenshot({ path: filename, fullPage: true });
-      console.log(`Página ${pageNum} capturada.`);
+      console.log(`Página ${pageNum} capturada en ${filename}`);
 
       const currContent = await page.content();
       if (currContent === lastContent) {
